@@ -12,6 +12,8 @@
 
 #include "UIHelper.hpp"
 
+#include <time.h>
+
 #ifndef NDEBUG
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
@@ -263,8 +265,18 @@ Application::~Application() {
 void Application::Load(const char *filename) {
 	BVHConfig bvh_config = {};
 	std::shared_ptr<Scene> scene = Scene::CreateFromFile(filename);
+	
+	clock_t t1, t2;
+	
+	t1 = clock();
+	
 	auto binary_bvh = AtomicBinaryBVH::Build<ParallelSBVHBuilder>(bvh_config, scene);
 	std::shared_ptr<WideBVH> widebvh = WideBVH::Build(binary_bvh);
+	
+	t2 = clock();
+	
+	printf("builded in %.1fs\n", float(t2-t1)/float(CLOCKS_PER_SEC));
+	
 	m_accelerated_scene = AcceleratedScene::Create(m_loader_queue, widebvh);
 	m_ray_tracer = RayTracer::Create(m_accelerated_scene, m_camera, m_render_pass, 0);
 }
