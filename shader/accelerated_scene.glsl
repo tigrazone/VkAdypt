@@ -38,9 +38,9 @@ layout(std430, set = ACCELERATED_SCENE_SET, binding = 4) readonly buffer uuBVHTr
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 5) readonly buffer uuBVHTriMatrices { Woop uBVHTriMatrices[]; };
 
 uvec2 stack[kTraversalStackSize];
+const float ooeps = exp2(-64.0f);
 
 void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_idx, out vec2 o_hit_uv) {
-	const float ooeps = exp2(-64.0f);
 	dir.x = abs(dir.x) > ooeps ? dir.x : (dir.x >= 0 ? ooeps : -ooeps);
 	dir.y = abs(dir.y) > ooeps ? dir.y : (dir.y >= 0 ? ooeps : -ooeps);
 	dir.z = abs(dir.z) > ooeps ? dir.z : (dir.z >= 0 ? ooeps : -ooeps);
@@ -62,12 +62,14 @@ void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_i
 	uvec2 tri_group, node_group = uvec2(0u, 0x80000000u);
 
 	// aabb intersection variables
-	float txmin[4], tymin[4], tzmin[4], txmax[4], tymax[4], tzmax[4], ctmin, ctmax;
+	vec4 txmin, tymin, tzmin, txmax, tymax, tzmax;
+	float ctmin, ctmax;
 
 	// triangle intersection variables
 	vec4 tv00, tv11, tv22;
-	float tdx, tdy, tidz, tox, toy, toz;
 	float tt, tu, tv;
+	
+	vec3 position;
 
 	while (true) {
 		if (node_group.y > 0x00ffffffu) {
@@ -123,32 +125,17 @@ void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_i
 				uint swizzled_loz = (idir.z < 0) ? hiy_hiz.z : loz_hix.x;
 				uint swizzled_hiz = (idir.z < 0) ? loz_hix.x : hiy_hiz.z;
 
-				txmin[0] = float((swizzled_lox)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[1] = float((swizzled_lox >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[2] = float((swizzled_lox >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[3] = float((swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				tymin[0] = float((swizzled_loy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[1] = float((swizzled_loy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[2] = float((swizzled_loy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[3] = float((swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
+				txmin = vec4(ivec4(swizzled_lox, swizzled_lox >> 8, swizzled_lox >> 16, swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymin = vec4(ivec4(swizzled_loy, swizzled_loy >> 8, swizzled_loy >> 16, swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmin = vec4(ivec4(swizzled_loz, swizzled_loz >> 8, swizzled_loz >> 16, swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
-				tzmin[0] = float((swizzled_loz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[1] = float((swizzled_loz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[2] = float((swizzled_loz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[3] = float((swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				txmax[0] = float((swizzled_hix)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[1] = float((swizzled_hix >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[2] = float((swizzled_hix >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[3] = float((swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-
-				tymax[0] = float((swizzled_hiy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[1] = float((swizzled_hiy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[2] = float((swizzled_hiy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[3] = float((swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tzmax[0] = float((swizzled_hiz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[1] = float((swizzled_hiz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[2] = float((swizzled_hiz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[3] = float((swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
+				txmax = vec4(ivec4(swizzled_hix, swizzled_hix >> 8, swizzled_hix >> 16, swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymax = vec4(ivec4(swizzled_hiy, swizzled_hiy >> 8, swizzled_hiy >> 16, swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmax = vec4(ivec4(swizzled_hiz, swizzled_hiz >> 8, swizzled_hiz >> 16, swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
 				ctmin = max(max(txmin[0], tymin[0]), max(tzmin[0], hit_tmin));
 				ctmax = min(min(txmax[0], tymax[0]), min(tzmax[0], hit_t));
@@ -186,32 +173,18 @@ void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_i
 				uint swizzled_loz = (idir.z < 0) ? hiy_hiz.w : loz_hix.y;
 				uint swizzled_hiz = (idir.z < 0) ? loz_hix.y : hiy_hiz.w;
 
-				txmin[0] = float((swizzled_lox)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[1] = float((swizzled_lox >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[2] = float((swizzled_lox >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[3] = float((swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				tymin[0] = float((swizzled_loy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[1] = float((swizzled_loy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[2] = float((swizzled_loy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[3] = float((swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
 
-				tzmin[0] = float((swizzled_loz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[1] = float((swizzled_loz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[2] = float((swizzled_loz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[3] = float((swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				txmax[0] = float((swizzled_hix)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[1] = float((swizzled_hix >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[2] = float((swizzled_hix >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[3] = float((swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
+				txmin = vec4(ivec4(swizzled_lox, swizzled_lox >> 8, swizzled_lox >> 16, swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymin = vec4(ivec4(swizzled_loy, swizzled_loy >> 8, swizzled_loy >> 16, swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmin = vec4(ivec4(swizzled_loz, swizzled_loz >> 8, swizzled_loz >> 16, swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
-				tymax[0] = float((swizzled_hiy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[1] = float((swizzled_hiy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[2] = float((swizzled_hiy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[3] = float((swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tzmax[0] = float((swizzled_hiz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[1] = float((swizzled_hiz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[2] = float((swizzled_hiz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[3] = float((swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
+				txmax = vec4(ivec4(swizzled_hix, swizzled_hix >> 8, swizzled_hix >> 16, swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymax = vec4(ivec4(swizzled_hiy, swizzled_hiy >> 8, swizzled_hiy >> 16, swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmax = vec4(ivec4(swizzled_hiz, swizzled_hiz >> 8, swizzled_hiz >> 16, swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
 				ctmin = max(max(txmin[0], tymin[0]), max(tzmin[0], hit_tmin));
 				ctmax = min(min(txmax[0], tymax[0]), min(tzmax[0], hit_t));
@@ -249,26 +222,22 @@ void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_i
 			tv00 = uBVHTriMatrices[tridx].m0;
 			tv11 = uBVHTriMatrices[tridx].m1;
 			tv22 = uBVHTriMatrices[tridx].m2;
-
-			toz = tv00.w - dot(origin, tv00.xyz);
-			tidz = 1.0 / dot(dir, tv00.xyz);
-			tt = toz * tidz;
-
-			tox = tv11.w + dot(origin, tv11.xyz);
-			tdx = dot(dir, tv11.xyz);
-			tu = tox + tt * tdx;
-
-			toy = tv22.w + dot(origin, tv22.xyz);
-			tdy = dot(dir, tv22.xyz);
-			tv = toy + tt * tdy;
-
-			if (tt > hit_tmin && tt < hit_t)
-				if (tu >= 0.0 && tu <= 1.0)
+			
+			tt = (tv00.w - dot(origin, tv00.xyz)) / dot(dir, tv00.xyz);
+		
+			if (tt > hit_tmin && tt < hit_t) {
+				position = origin + tt*dir;
+				tu = tv11.w + dot(position, tv11.xyz);
+			
+				tv = tv22.w + dot(position, tv22.xyz);
+				if (tu >= 0.0 && tu <= 1.0) {
 					if (tv >= 0.0 && tu + tv <= 1.0) {
 						hit_t = tt;
 						o_hit_uv = vec2(tu, tv);
 						o_hit_tri_idx = tridx;
 					}
+				}
+			}
 		}
 
 		if (node_group.y <= 0x00ffffffu) {
@@ -283,7 +252,6 @@ void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_i
 }
 
 bool BVHIntersection(in const vec4 origin_tmin, vec3 dir) {
-	const float ooeps = exp2(-64.0f);
 	dir.x = abs(dir.x) > ooeps ? dir.x : (dir.x >= 0 ? ooeps : -ooeps);
 	dir.y = abs(dir.y) > ooeps ? dir.y : (dir.y >= 0 ? ooeps : -ooeps);
 	dir.z = abs(dir.z) > ooeps ? dir.z : (dir.z >= 0 ? ooeps : -ooeps);
@@ -304,12 +272,15 @@ bool BVHIntersection(in const vec4 origin_tmin, vec3 dir) {
 	uvec2 tri_group, node_group = uvec2(0u, 0x80000000u);
 
 	// aabb intersection variables
-	float txmin[4], tymin[4], tzmin[4], txmax[4], tymax[4], tzmax[4], ctmin, ctmax;
+	vec4 txmin, tymin, tzmin, txmax, tymax, tzmax;
+	float ctmin, ctmax;
 
 	// triangle intersection variables
 	vec4 tv00, tv11, tv22;
-	float tdx, tdy, tidz, tox, toy, toz;
+	
 	float tt, tu, tv;
+	
+	vec3 position;
 
 	while (true) {
 		if (node_group.y > 0x00ffffffu) {
@@ -365,32 +336,17 @@ bool BVHIntersection(in const vec4 origin_tmin, vec3 dir) {
 				uint swizzled_loz = (idir.z < 0) ? hiy_hiz.z : loz_hix.x;
 				uint swizzled_hiz = (idir.z < 0) ? loz_hix.x : hiy_hiz.z;
 
-				txmin[0] = float((swizzled_lox)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[1] = float((swizzled_lox >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[2] = float((swizzled_lox >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[3] = float((swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				tymin[0] = float((swizzled_loy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[1] = float((swizzled_loy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[2] = float((swizzled_loy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[3] = float((swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
+				txmin = vec4(ivec4(swizzled_lox, swizzled_lox >> 8, swizzled_lox >> 16, swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymin = vec4(ivec4(swizzled_loy, swizzled_loy >> 8, swizzled_loy >> 16, swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmin = vec4(ivec4(swizzled_loz, swizzled_loz >> 8, swizzled_loz >> 16, swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
-				tzmin[0] = float((swizzled_loz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[1] = float((swizzled_loz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[2] = float((swizzled_loz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[3] = float((swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				txmax[0] = float((swizzled_hix)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[1] = float((swizzled_hix >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[2] = float((swizzled_hix >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[3] = float((swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-
-				tymax[0] = float((swizzled_hiy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[1] = float((swizzled_hiy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[2] = float((swizzled_hiy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[3] = float((swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tzmax[0] = float((swizzled_hiz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[1] = float((swizzled_hiz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[2] = float((swizzled_hiz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[3] = float((swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
+				txmax = vec4(ivec4(swizzled_hix, swizzled_hix >> 8, swizzled_hix >> 16, swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymax = vec4(ivec4(swizzled_hiy, swizzled_hiy >> 8, swizzled_hiy >> 16, swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmax = vec4(ivec4(swizzled_hiz, swizzled_hiz >> 8, swizzled_hiz >> 16, swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
 				ctmin = max(max(txmin[0], tymin[0]), max(tzmin[0], hit_tmin));
 				ctmax = min(min(txmax[0], tymax[0]), min(tzmax[0], hit_t));
@@ -428,32 +384,17 @@ bool BVHIntersection(in const vec4 origin_tmin, vec3 dir) {
 				uint swizzled_loz = (idir.z < 0) ? hiy_hiz.w : loz_hix.y;
 				uint swizzled_hiz = (idir.z < 0) ? loz_hix.y : hiy_hiz.w;
 
-				txmin[0] = float((swizzled_lox)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[1] = float((swizzled_lox >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[2] = float((swizzled_lox >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmin[3] = float((swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				tymin[0] = float((swizzled_loy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[1] = float((swizzled_loy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[2] = float((swizzled_loy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymin[3] = float((swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
+				txmin = vec4(ivec4(swizzled_lox, swizzled_lox >> 8, swizzled_lox >> 16, swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymin = vec4(ivec4(swizzled_loy, swizzled_loy >> 8, swizzled_loy >> 16, swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmin = vec4(ivec4(swizzled_loz, swizzled_loz >> 8, swizzled_loz >> 16, swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
-				tzmin[0] = float((swizzled_loz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[1] = float((swizzled_loz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[2] = float((swizzled_loz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmin[3] = float((swizzled_loz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				txmax[0] = float((swizzled_hix)&0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[1] = float((swizzled_hix >> 8) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[2] = float((swizzled_hix >> 16) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-				txmax[3] = float((swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + adjusted_origin.x;
-
-				tymax[0] = float((swizzled_hiy)&0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[1] = float((swizzled_hiy >> 8) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[2] = float((swizzled_hiy >> 16) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tymax[3] = float((swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + adjusted_origin.y;
-				tzmax[0] = float((swizzled_hiz)&0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[1] = float((swizzled_hiz >> 8) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[2] = float((swizzled_hiz >> 16) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
-				tzmax[3] = float((swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + adjusted_origin.z;
+				txmax = vec4(ivec4(swizzled_hix, swizzled_hix >> 8, swizzled_hix >> 16, swizzled_hix >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
+				
+				tymax = vec4(ivec4(swizzled_hiy, swizzled_hiy >> 8, swizzled_hiy >> 16, swizzled_hiy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);
+				
+				tzmax = vec4(ivec4(swizzled_hiz, swizzled_hiz >> 8, swizzled_hiz >> 16, swizzled_hiz >> 24) & 0xffu) * adjusted_idir_z + vec4(adjusted_origin.z);
 
 				ctmin = max(max(txmin[0], tymin[0]), max(tzmin[0], hit_tmin));
 				ctmax = min(min(txmax[0], tymax[0]), min(tzmax[0], hit_t));
@@ -491,25 +432,21 @@ bool BVHIntersection(in const vec4 origin_tmin, vec3 dir) {
 			tv00 = uBVHTriMatrices[tridx].m0;
 			tv11 = uBVHTriMatrices[tridx].m1;
 			tv22 = uBVHTriMatrices[tridx].m2;
-
-			toz = tv00.w - dot(origin, tv00.xyz);
-			tidz = 1.0 / dot(dir, tv00.xyz);
-			tt = toz * tidz;
-
-			tox = tv11.w + dot(origin, tv11.xyz);
-			tdx = dot(dir, tv11.xyz);
-			tu = tox + tt * tdx;
-
-			toy = tv22.w + dot(origin, tv22.xyz);
-			tdy = dot(dir, tv22.xyz);
-			tv = toy + tt * tdy;
-
-			if (tt > hit_tmin && tt < hit_t)
-				if (tu >= 0.0 && tu <= 1.0)
+			
+			tt = (tv00.w - dot(origin, tv00.xyz)) / dot(dir, tv00.xyz);
+		
+			if (tt > hit_tmin && tt < hit_t) {
+				position = origin + tt*dir;
+				tu = tv11.w + dot(position, tv11.xyz);
+			
+				tv = tv22.w + dot(position, tv22.xyz);
+				if (tu >= 0.0 && tu <= 1.0) {
 					if (tv >= 0.0 && tu + tv <= 1.0) {
 						hit_t = tt;
 						return true;
 					}
+				}
+			}
 		}
 
 		if (node_group.y <= 0x00ffffffu) {

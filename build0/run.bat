@@ -1,0 +1,1 @@
+adypt -obj c:\msys64\home\user\akari2\asset\scene2.obj

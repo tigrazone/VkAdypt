@@ -1,0 +1,1 @@
+adypt -obj "c:\msys64\home\thr\5dec17-my-nanort\5dec17-my-nanort\my\nanort-dev\examples\nanosg2 - bpt\bin\x64\Release\conference.obj"
