@@ -69,7 +69,7 @@ void RayTracer::CmdDrawPipeline(const std::shared_ptr<myvk::CommandBuffer> &comm
 	viewport.height = m_height;
 	command_buffer->CmdSetViewport({viewport});
 
-	uint32_t push_constants[] = {m_width, m_height};
+	float push_constants[] = {1.0f / float(m_width), 1.0f / float(m_height)};
 	command_buffer->CmdPushConstants(m_pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(push_constants),
 	                                 push_constants);
 	command_buffer->CmdDraw(3, 1, 0, 0);
