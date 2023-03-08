@@ -228,9 +228,8 @@ void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_i
 			if (tt > hit_tmin && tt < hit_t) {
 				position = origin + tt*dir;
 				tu = tv11.w + dot(position, tv11.xyz);
-			
-				tv = tv22.w + dot(position, tv22.xyz);
 				if (tu >= 0.0 && tu <= 1.0) {
+					tv = tv22.w + dot(position, tv22.xyz);
 					if (tv >= 0.0 && tu + tv <= 1.0) {
 						hit_t = tt;
 						o_hit_uv = vec2(tu, tv);
@@ -438,9 +437,8 @@ bool BVHIntersection(in const vec4 origin_tmin, vec3 dir) {
 			if (tt > hit_tmin && tt < hit_t) {
 				position = origin + tt*dir;
 				tu = tv11.w + dot(position, tv11.xyz);
-			
-				tv = tv22.w + dot(position, tv22.xyz);
 				if (tu >= 0.0 && tu <= 1.0) {
+					tv = tv22.w + dot(position, tv22.xyz);
 					if (tv >= 0.0 && tu + tv <= 1.0) {
 						hit_t = tt;
 						return true;
