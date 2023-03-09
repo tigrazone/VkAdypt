@@ -5,12 +5,12 @@
 layout(constant_id = 0) const uint kTextureNum = 1024;
 layout(constant_id = 1) const uint kTraversalStackSize = 23;
 
-struct Triangle {
-	float m_p1[3], m_p2[3], m_p3[3];
-	float m_n1[3], m_n2[3], m_n3[3];
-	float m_tc1[2], m_tc2[2], m_tc3[2];
+struct TrianglePkd {
+	uint m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2;
+	float m_p1l, m_p2l, m_p3l, m_tcP1len, m_tcP2len;
 	uint m_material_id;
 };
+
 struct Material {
 	uint m_dtex;
 	float m_dr, m_dg, m_db;
@@ -31,11 +31,14 @@ struct Woop {
 	vec4 m0, m1, m2;
 };
 layout(set = ACCELERATED_SCENE_SET, binding = 0) uniform sampler2D uTextures[kTextureNum];
-layout(std430, set = ACCELERATED_SCENE_SET, binding = 1) readonly buffer uuTriangles { Triangle uTriangles[]; };
+layout(std430, set = ACCELERATED_SCENE_SET, binding = 1) readonly buffer uuTriangles { TrianglePkd uTriangles[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 2) readonly buffer uuTriMaterials { Material uTriMaterials[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 3) readonly buffer uuBVHNodes { Node uBVHNodes[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 4) readonly buffer uuBVHTriIndices { uint uBVHTriIndices[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 5) readonly buffer uuBVHTriMatrices { Woop uBVHTriMatrices[]; };
+
+
+#include "compress.glsl"
 
 uvec2 stack[kTraversalStackSize];
 const float ooeps = exp2(-64.0f);
@@ -464,17 +467,23 @@ void TriangleFetchInfo(in const uint tri_idx,
                        out vec3 diffuse,
                        out vec3 specular,
                        inout Material mtl) {
-	Triangle tri = uTriangles[tri_idx];
+	TrianglePkd tri = uTriangles[tri_idx];
 	mtl = uTriMaterials[tri.m_material_id];
-	normal = normalize(vec3(tri.m_n1[0], tri.m_n1[1], tri.m_n1[2]) * tri_uv.x +
-	                   vec3(tri.m_n2[0], tri.m_n2[1], tri.m_n2[2]) * tri_uv.y +
-	                   vec3(tri.m_n3[0], tri.m_n3[1], tri.m_n3[2]) * (1.0 - tri_uv.x - tri_uv.y));
-	position = vec3(tri.m_p1[0], tri.m_p1[1], tri.m_p1[2]) * tri_uv.x +
-	           vec3(tri.m_p2[0], tri.m_p2[1], tri.m_p2[2]) * tri_uv.y +
-	           vec3(tri.m_p3[0], tri.m_p3[1], tri.m_p3[2]) * (1.0 - tri_uv.x - tri_uv.y);
+	normal = normalize(decompress_unit_vec(tri.m_n1) * tri_uv.x +
+	                   decompress_unit_vec(tri.m_n2) * tri_uv.y +
+	                   decompress_unit_vec(tri.m_n3) * (1.0 - tri_uv.x - tri_uv.y));
+					   
+	vec3 m_p1 = decompress_unit_vec(tri.m_p1v) * tri.m_p1l;
+	vec3 m_p2 = decompress_unit_vec(tri.m_p2v) * tri.m_p2l + m_p1;
+	vec3 m_p3 = decompress_unit_vec(tri.m_p3v) * tri.m_p3l + m_p1;
+	position = m_p1 * tri_uv.x +
+	           m_p2 * tri_uv.y +
+	           m_p3 * (1.0 - tri_uv.x - tri_uv.y);
 	if (mtl.m_dtex != 0xffffffffu) {
-		vec2 texcoords = vec2(tri.m_tc1[0], tri.m_tc1[1]) * tri_uv.x + vec2(tri.m_tc2[0], tri.m_tc2[1]) * tri_uv.y +
-		                 vec2(tri.m_tc3[0], tri.m_tc3[1]) * (1.0 - tri_uv.x - tri_uv.y);
+		vec3 m_tc1 = decompress_unit_vec(tri.m_tcP1) * tri.m_tcP1len;
+		vec3 m_tc2 = decompress_unit_vec(tri.m_tcP2) * tri.m_tcP2len;
+		vec2 texcoords = vec2(m_tc1[0], m_tc1[1]) * tri_uv.x + vec2(m_tc1[2], m_tc2[0]) * tri_uv.y +
+		                 vec2(m_tc2[1], m_tc2[2]) * (1.0 - tri_uv.x - tri_uv.y);
 		diffuse = texture(uTextures[mtl.m_dtex], texcoords).rgb;
 	} else
 		diffuse = vec3(mtl.m_dr, mtl.m_dg, mtl.m_db);
@@ -483,19 +492,21 @@ void TriangleFetchInfo(in const uint tri_idx,
 }
 
 vec3 TriangleFetchDiffuse(in const uint tri_idx, in const vec2 tri_uv) {
-	Triangle tri = uTriangles[tri_idx];
+	TrianglePkd tri = uTriangles[tri_idx];
 	Material mtl = uTriMaterials[tri.m_material_id];
 	if (mtl.m_dtex != 0xffffffffu) {
-		vec2 texcoords = vec2(tri.m_tc1[0], tri.m_tc1[1]) * tri_uv.x + vec2(tri.m_tc2[0], tri.m_tc2[1]) * tri_uv.y +
-		                 vec2(tri.m_tc3[0], tri.m_tc3[1]) * (1.0 - tri_uv.x - tri_uv.y);
+		vec3 m_tc1 = decompress_unit_vec(tri.m_tcP1) * tri.m_tcP1len;
+		vec3 m_tc2 = decompress_unit_vec(tri.m_tcP2) * tri.m_tcP2len;
+		vec2 texcoords = vec2(m_tc1[0], m_tc1[1]) * tri_uv.x + vec2(m_tc1[2], m_tc2[0]) * tri_uv.y +
+		                 vec2(m_tc2[1], m_tc2[2]) * (1.0 - tri_uv.x - tri_uv.y);
 		return texture(uTextures[mtl.m_dtex], texcoords).rgb;
 	} else
 		return vec3(mtl.m_dr, mtl.m_dg, mtl.m_db);
 }
 
 vec3 TriangleFetchNormal(in const uint tri_idx, in const vec2 tri_uv) {
-	Triangle tri = uTriangles[tri_idx];
-	return normalize(vec3(tri.m_n1[0], tri.m_n1[1], tri.m_n1[2]) * tri_uv.x +
-	                 vec3(tri.m_n2[0], tri.m_n2[1], tri.m_n2[2]) * tri_uv.y +
-	                 vec3(tri.m_n3[0], tri.m_n3[1], tri.m_n3[2]) * (1.0 - tri_uv.x - tri_uv.y));
+	TrianglePkd tri = uTriangles[tri_idx];
+	return normalize(decompress_unit_vec(tri.m_n1) * tri_uv.x +
+	                 decompress_unit_vec(tri.m_n2) * tri_uv.y +
+	                 decompress_unit_vec(tri.m_n3) * (1.0 - tri_uv.x - tri_uv.y));
 }

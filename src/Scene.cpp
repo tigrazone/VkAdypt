@@ -58,6 +58,8 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 	uint m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2;
 	float m_p1l, m_p2l, m_p3l;
 	
+	TrianglePkd triPkd;
+	
 	// Loop over shapes
 	for (const auto &shape : shapes) {
 		size_t index_offset = 0, face = 0;
@@ -70,8 +72,6 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 				Triangle &tri = m_triangles.back();
 
 				{
-					tri.matid = shape.mesh.material_ids[face];
-
 					tinyobj::index_t index = shape.mesh.indices[index_offset + v];
 					{
 						i3 = index.vertex_index + index.vertex_index + index.vertex_index;
@@ -148,36 +148,40 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 					tri.positions[0] = positions[0];
 					tri.positions[1] = positions[1];
 					tri.positions[2] = positions[2];
+
+					//save packed triangle data
+					triPkd.m_material_id = shape.mesh.material_ids[face];
 					
-					tri.normals[0] = normals[0];
-					tri.normals[1] = normals[1];
-					tri.normals[2] = normals[2];
-						
-					tri.texcoords[0] = texcoords[0];
-					tri.texcoords[1] = texcoords[1];
-					tri.texcoords[2] = texcoords[2];
-					
-					//create compressed version of positions, texture coords, normals
+					//calculate compressed version of positions, texture coords, normals
 					len = glm::length(positions[0]);
-					m_p1v = compress_unit_vec( positions[0] / len );
-					m_p1l = len;
+					triPkd.m_p1v = compress_unit_vec( positions[0] / len );
+					triPkd.m_p1l = len;
 					
 					delta = positions[1] - positions[0];
 					len = glm::length(delta);
-					m_p2v = compress_unit_vec( delta / len );
-					m_p2l = len;
+					triPkd.m_p2v = compress_unit_vec( delta / len );
+					triPkd.m_p2l = len;
 					
 					delta = positions[2] - positions[0];
 					len = glm::length(delta);
-					m_p3v = compress_unit_vec( delta / len );
-					m_p3l = len;
+					triPkd.m_p3v = compress_unit_vec( delta / len );
+					triPkd.m_p3l = len;
 					
-					m_n1 = compress_unit_vec( normals[0] );
-					m_n2 = compress_unit_vec( normals[1] );
-					m_n3 = compress_unit_vec( normals[2] );
+					triPkd.m_n1 = compress_unit_vec( normals[0] );
+					triPkd.m_n2 = compress_unit_vec( normals[1] );
+					triPkd.m_n3 = compress_unit_vec( normals[2] );
 					
-					m_tcP1 = compress_unit_vec( vec3(texcoords[0][0], texcoords[0][1], texcoords[1][0]) );
-					m_tcP2 = compress_unit_vec( vec3(texcoords[1][1], texcoords[2][0], texcoords[2][1]) );
+					delta = vec3(texcoords[0][0], texcoords[0][1], texcoords[1][0]);
+					len = glm::length(delta);
+					triPkd.m_tcP1 = compress_unit_vec( delta / len );
+					triPkd.m_tcP1len = len;
+					
+					delta = vec3(texcoords[1][1], texcoords[2][0], texcoords[2][1]);
+					len = glm::length(delta);
+					triPkd.m_tcP2 = compress_unit_vec( delta / len );
+					triPkd.m_tcP2len = len;
+					
+					m_trianglesPkd.push_back(triPkd);
 				}
 				m_aabb.Expand(tri.GetAABB());
 			}

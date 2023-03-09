@@ -222,7 +222,7 @@ void AcceleratedScene::create_triangle_buffers(const std::shared_ptr<myvk::Queue
 	std::shared_ptr<myvk::Buffer> triangles_staging_buffer, tri_materials_staging_buffer;
 
 	{ // create triangles_staging_buffer
-		const std::vector<Triangle> &triangles = scene->GetTriangles();
+		const std::vector<TrianglePkd> &triangles = scene->GetTrianglesPkd();
 		triangles_staging_buffer = myvk::Buffer::CreateStaging(device, triangles.begin(), triangles.end());
 	}
 
