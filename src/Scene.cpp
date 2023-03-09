@@ -137,22 +137,22 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 							texcoords[2] = {0, 0};
 						}
 					}
+
+					// generate normal
+					if (index.normal_index == -1) {
+						normals[2] = normals[1] = normals[0] = glm::normalize(
+						    glm::cross(positions[1] - positions[0], positions[2] - positions[0]));
+						gen_normal_warn = true;
+					}
 					
 					tri.positions[0] = positions[0];
 					tri.positions[1] = positions[1];
 					tri.positions[2] = positions[2];
-
-					// generate normal
-					if (index.normal_index == -1) {
-						tri.normals[2] = tri.normals[0] = tri.normals[1] = glm::normalize(
-						    glm::cross(positions[1] - positions[0], positions[2] - positions[0]));
-						gen_normal_warn = true;
-					} else {
-						tri.normals[0] = normals[0];
-						tri.normals[1] = normals[1];
-						tri.normals[2] = normals[2];
-					}
 					
+					tri.normals[0] = normals[0];
+					tri.normals[1] = normals[1];
+					tri.normals[2] = normals[2];
+						
 					tri.texcoords[0] = texcoords[0];
 					tri.texcoords[1] = texcoords[1];
 					tri.texcoords[2] = texcoords[2];
