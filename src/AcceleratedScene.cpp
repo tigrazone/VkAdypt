@@ -81,7 +81,7 @@ AcceleratedScene::generate_tri_materials(const std::shared_ptr<Scene> &scene,
 		mat.m_illum = t.illum;
 		mat.m_shininess = t.shininess;
 		mat.m_dissolve = t.dissolve;
-		mat.m_refraction_index = t.ior;
+		mat.m_ior = t.ior;
 	}
 
 	for (uint32_t i = 0; i < materials.size(); ++i)

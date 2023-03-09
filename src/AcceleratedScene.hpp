@@ -21,7 +21,7 @@ private:
 		uint32_t m_stex;
 		float m_sr, m_sg, m_sb;
 		uint32_t m_illum;
-		float m_shininess, m_dissolve, m_refraction_index;
+		float m_shininess, m_dissolve, m_ior;
 	};
 	struct Texture {
 		std::shared_ptr<myvk::Image> m_image;
