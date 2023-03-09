@@ -49,6 +49,8 @@ std::shared_ptr<Scene> Scene::CreateFromFile(const char *filename) {
 
 void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<tinyobj::shape_t> &shapes) {
 	bool gen_normal_warn = false;
+	size_t i3;
+	
 	// Loop over shapes
 	for (const auto &shape : shapes) {
 		size_t index_offset = 0, face = 0;
@@ -65,46 +67,62 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 
 					tinyobj::index_t index = shape.mesh.indices[index_offset + v];
 					{
-						tri.positions[0] = {attrib.vertices[3 * index.vertex_index + 0],
-						                    attrib.vertices[3 * index.vertex_index + 1],
-						                    attrib.vertices[3 * index.vertex_index + 2]};
-						if (~index.normal_index)
-							tri.normals[0] = {attrib.normals[3 * index.normal_index + 0],
-							                  attrib.normals[3 * index.normal_index + 1],
-							                  attrib.normals[3 * index.normal_index + 2]};
+						i3 = index.vertex_index + index.vertex_index + index.vertex_index;
+						tri.positions[0] = {attrib.vertices[i3],
+						                    attrib.vertices[i3 + 1],
+						                    attrib.vertices[i3 + 2]};
+						if (~index.normal_index) {
+							i3 = index.normal_index + index.normal_index + index.normal_index;
+							tri.normals[0] = {attrib.normals[i3],
+							                  attrib.normals[i3 + 1],
+							                  attrib.normals[i3 + 2]};
+						}
 
-						if (~index.texcoord_index)
-							tri.texcoords[0] = {attrib.texcoords[2 * index.texcoord_index + 0],
-							                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
+						if (~index.texcoord_index) {
+							i3 = index.texcoord_index + index.texcoord_index;
+							tri.texcoords[0] = {attrib.texcoords[i3],
+							                    1.0f - attrib.texcoords[i3 + 1]};
+						}
 					}
 					index = shape.mesh.indices[index_offset + v + 1];
 					{
-						tri.positions[1] = {attrib.vertices[3 * index.vertex_index + 0],
-						                    attrib.vertices[3 * index.vertex_index + 1],
-						                    attrib.vertices[3 * index.vertex_index + 2]};
-						if (~index.normal_index)
-							tri.normals[1] = {attrib.normals[3 * index.normal_index + 0],
-							                  attrib.normals[3 * index.normal_index + 1],
-							                  attrib.normals[3 * index.normal_index + 2]};
+						i3 = index.vertex_index + index.vertex_index + index.vertex_index;
+						tri.positions[1] = {attrib.vertices[i3],
+						                    attrib.vertices[i3 + 1],
+						                    attrib.vertices[i3 + 2]};
+						if (~index.normal_index) {
+							i3 = index.normal_index + index.normal_index + index.normal_index;
+							tri.normals[1] = {attrib.normals[i3],
+							                  attrib.normals[i3 + 1],
+							                  attrib.normals[i3 + 2]};
+						}
 
-						if (~index.texcoord_index)
-							tri.texcoords[1] = {attrib.texcoords[2 * index.texcoord_index + 0],
-							                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
+						if (~index.texcoord_index) {
+							i3 = index.texcoord_index + index.texcoord_index;
+							tri.texcoords[1] = {attrib.texcoords[i3],
+							                    1.0f - attrib.texcoords[i3 + 1]};
+						}
 					}
 
 					index = shape.mesh.indices[index_offset + v + 2];
 					{
-						tri.positions[2] = {attrib.vertices[3 * index.vertex_index + 0],
-						                    attrib.vertices[3 * index.vertex_index + 1],
-						                    attrib.vertices[3 * index.vertex_index + 2]};
-						if (~index.normal_index)
-							tri.normals[2] = {attrib.normals[3 * index.normal_index + 0],
-							                  attrib.normals[3 * index.normal_index + 1],
-							                  attrib.normals[3 * index.normal_index + 2]};
+						
+						i3 = index.vertex_index + index.vertex_index + index.vertex_index;
+						tri.positions[2] = {attrib.vertices[i3],
+						                    attrib.vertices[i3 + 1],
+						                    attrib.vertices[i3 + 2]};
+						if (~index.normal_index) {
+							i3 = index.normal_index + index.normal_index + index.normal_index;
+							tri.normals[2] = {attrib.normals[i3],
+							                  attrib.normals[i3 + 1],
+							                  attrib.normals[i3 + 2]};
+						}
 
-						if (~index.texcoord_index)
-							tri.texcoords[2] = {attrib.texcoords[2 * index.texcoord_index + 0],
-							                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
+						if (~index.texcoord_index) {
+							i3 = index.texcoord_index + index.texcoord_index;
+							tri.texcoords[2] = {attrib.texcoords[i3],
+							                    1.0f - attrib.texcoords[i3 + 1]};
+						}
 					}
 
 					// generate normal
