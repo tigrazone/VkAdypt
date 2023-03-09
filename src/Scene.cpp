@@ -1,4 +1,5 @@
 #include "Scene.hpp"
+#include "../shader/compress.glsl"
 #include <spdlog/spdlog.h>
 #include <tiny_obj_loader.h>
 
@@ -50,6 +51,9 @@ std::shared_ptr<Scene> Scene::CreateFromFile(const char *filename) {
 void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<tinyobj::shape_t> &shapes) {
 	bool gen_normal_warn = false;
 	size_t i3;
+	glm::vec3 positions[3], normals[3], deltas[2];
+	glm::vec2 texcoords[3];
+	float len;
 	
 	// Loop over shapes
 	for (const auto &shape : shapes) {
@@ -68,39 +72,43 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 					tinyobj::index_t index = shape.mesh.indices[index_offset + v];
 					{
 						i3 = index.vertex_index + index.vertex_index + index.vertex_index;
-						tri.positions[0] = {attrib.vertices[i3],
-						                    attrib.vertices[i3 + 1],
-						                    attrib.vertices[i3 + 2]};
+						positions[0] = {attrib.vertices[i3],
+						                attrib.vertices[i3 + 1],
+						                attrib.vertices[i3 + 2]};
 						if (~index.normal_index) {
 							i3 = index.normal_index + index.normal_index + index.normal_index;
-							tri.normals[0] = {attrib.normals[i3],
-							                  attrib.normals[i3 + 1],
-							                  attrib.normals[i3 + 2]};
+							normals[0] = {attrib.normals[i3],
+							              attrib.normals[i3 + 1],
+							              attrib.normals[i3 + 2]};
 						}
 
 						if (~index.texcoord_index) {
 							i3 = index.texcoord_index + index.texcoord_index;
-							tri.texcoords[0] = {attrib.texcoords[i3],
-							                    1.0f - attrib.texcoords[i3 + 1]};
+							texcoords[0] = {attrib.texcoords[i3],
+							                1.0f - attrib.texcoords[i3 + 1]};
+						} else {
+							texcoords[0] = {0, 0};
 						}
 					}
 					index = shape.mesh.indices[index_offset + v + 1];
 					{
 						i3 = index.vertex_index + index.vertex_index + index.vertex_index;
-						tri.positions[1] = {attrib.vertices[i3],
-						                    attrib.vertices[i3 + 1],
-						                    attrib.vertices[i3 + 2]};
+						positions[1] = {attrib.vertices[i3],
+						                attrib.vertices[i3 + 1],
+						                attrib.vertices[i3 + 2]};
 						if (~index.normal_index) {
 							i3 = index.normal_index + index.normal_index + index.normal_index;
-							tri.normals[1] = {attrib.normals[i3],
-							                  attrib.normals[i3 + 1],
-							                  attrib.normals[i3 + 2]};
+							normals[1] = {attrib.normals[i3],
+							              attrib.normals[i3 + 1],
+							              attrib.normals[i3 + 2]};
 						}
 
 						if (~index.texcoord_index) {
 							i3 = index.texcoord_index + index.texcoord_index;
-							tri.texcoords[1] = {attrib.texcoords[i3],
-							                    1.0f - attrib.texcoords[i3 + 1]};
+							texcoords[1] = {attrib.texcoords[i3],
+							                1.0f - attrib.texcoords[i3 + 1]};
+						} else {
+							texcoords[1] = {0, 0};
 						}
 					}
 
@@ -108,29 +116,43 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 					{
 						
 						i3 = index.vertex_index + index.vertex_index + index.vertex_index;
-						tri.positions[2] = {attrib.vertices[i3],
-						                    attrib.vertices[i3 + 1],
-						                    attrib.vertices[i3 + 2]};
+						positions[2] = {attrib.vertices[i3],
+						                attrib.vertices[i3 + 1],
+						                attrib.vertices[i3 + 2]};
 						if (~index.normal_index) {
 							i3 = index.normal_index + index.normal_index + index.normal_index;
-							tri.normals[2] = {attrib.normals[i3],
-							                  attrib.normals[i3 + 1],
-							                  attrib.normals[i3 + 2]};
+							normals[2] = {attrib.normals[i3],
+							              attrib.normals[i3 + 1],
+							              attrib.normals[i3 + 2]};
 						}
 
 						if (~index.texcoord_index) {
 							i3 = index.texcoord_index + index.texcoord_index;
-							tri.texcoords[2] = {attrib.texcoords[i3],
-							                    1.0f - attrib.texcoords[i3 + 1]};
+							texcoords[2] = {attrib.texcoords[i3],
+							                1.0f - attrib.texcoords[i3 + 1]};
+						} else {
+							texcoords[2] = {0, 0};
 						}
 					}
+					
+					tri.positions[0] = positions[0];
+					tri.positions[1] = positions[1];
+					tri.positions[2] = positions[2];
 
 					// generate normal
 					if (index.normal_index == -1) {
 						tri.normals[2] = tri.normals[0] = tri.normals[1] = glm::normalize(
-						    glm::cross(tri.positions[1] - tri.positions[0], tri.positions[2] - tri.positions[0]));
+						    glm::cross(positions[1] - positions[0], positions[2] - positions[0]));
 						gen_normal_warn = true;
+					} else {
+						tri.normals[0] = normals[0];
+						tri.normals[1] = normals[1];
+						tri.normals[2] = normals[2];
 					}
+					
+					tri.texcoords[0] = texcoords[0];
+					tri.texcoords[1] = texcoords[1];
+					tri.texcoords[2] = texcoords[2];
 				}
 				m_aabb.Expand(tri.GetAABB());
 			}
