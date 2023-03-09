@@ -278,6 +278,10 @@ void Application::Load(const char *filename) {
 	printf("\n*** BVH built in %.1fs\n", float(t2-t1)/float(CLOCKS_PER_SEC));
 	
 	m_accelerated_scene = AcceleratedScene::Create(m_loader_queue, widebvh);
+	
+	//free memory used for triangles position array
+    scene->clearTriangles();
+	
 	m_ray_tracer = RayTracer::Create(m_accelerated_scene, m_camera, m_render_pass, 0);
 }
 
