@@ -52,8 +52,8 @@ struct Triangle {
 
 // can be directly put into gpu
 struct TrianglePkd {
-	uint32_t m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2;
-	float m_p1l, m_p2l, m_p3l, m_tcP1len, m_tcP2len;
+	uint32_t m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2, m_ppp, m_px;
+	float m_pxl;
 	uint32_t m_material_id;
 };
 

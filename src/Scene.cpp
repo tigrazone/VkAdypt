@@ -55,7 +55,6 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 	glm::vec2 texcoords[3];
 	float len;
 	
-	uint m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2;
 	float m_p1l, m_p2l, m_p3l;
 	
 	TrianglePkd triPkd;
@@ -151,36 +150,46 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 
 					//save packed triangle data
 					triPkd.m_material_id = shape.mesh.material_ids[face];
-					
+
 					//calculate compressed version of positions, texture coords, normals
 					len = glm::length(positions[0]);
 					triPkd.m_p1v = compress_unit_vec( positions[0] / len );
-					triPkd.m_p1l = len;
-					
+					m_p1l = len;
+
 					delta = positions[1] - positions[0];
 					len = glm::length(delta);
 					triPkd.m_p2v = compress_unit_vec( delta / len );
-					triPkd.m_p2l = len;
-					
+					m_p2l = len;
+
 					delta = positions[2] - positions[0];
 					len = glm::length(delta);
 					triPkd.m_p3v = compress_unit_vec( delta / len );
-					triPkd.m_p3l = len;
-					
+					m_p3l = len;
+
+					delta = vec3(m_p1l, m_p2l, m_p3l);
+					len = glm::length(delta);
+					triPkd.m_ppp = compress_unit_vec( delta / len );
+					m_p3l = len;
+
 					triPkd.m_n1 = compress_unit_vec( normals[0] );
 					triPkd.m_n2 = compress_unit_vec( normals[1] );
 					triPkd.m_n3 = compress_unit_vec( normals[2] );
-					
+
 					delta = vec3(texcoords[0][0], texcoords[0][1], texcoords[1][0]);
 					len = glm::length(delta);
 					triPkd.m_tcP1 = compress_unit_vec( delta / len );
-					triPkd.m_tcP1len = len;
-					
+					m_p1l = len;
+
 					delta = vec3(texcoords[1][1], texcoords[2][0], texcoords[2][1]);
 					len = glm::length(delta);
 					triPkd.m_tcP2 = compress_unit_vec( delta / len );
-					triPkd.m_tcP2len = len;
-					
+					m_p2l = len;
+
+					delta = vec3(m_p1l, m_p2l, m_p3l);
+					len = glm::length(delta);
+					triPkd.m_px = compress_unit_vec( delta / len );
+					triPkd.m_pxl = len;
+
 					m_trianglesPkd.push_back(triPkd);
 				}
 				m_aabb.Expand(tri.GetAABB());
