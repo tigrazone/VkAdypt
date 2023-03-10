@@ -8,7 +8,7 @@ layout(constant_id = 1) const uint kTraversalStackSize = 23;
 struct TrianglePkd {
 	uint m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2, m_ppp, m_px;	// 10
 	float m_pxl;																// 1
-	uint m_material_id;													// 1 -> 12
+	uint m_material_id;															// 1 -> 12
 };
 
 struct Material {
