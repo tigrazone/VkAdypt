@@ -6,6 +6,8 @@
 #include <random>
 #include <spdlog/spdlog.h>
 
+extern glm::vec3 decompress_unit_vec(glm::uint packed);
+
 void ParallelSBVHBuilder::Run() {
 	if (kThreadCount > 1)
 		m_thread_group = std::make_unique<ThreadUnit[]>(kThreadCount - 1);
@@ -37,12 +39,12 @@ ParallelSBVHBuilder::Task ParallelSBVHBuilder::make_root_task() {
 	m_node_pool[root_idx].aabb = m_scene.GetAABB();
 	std::vector<uint32_t> references;
 	{
-		references.reserve(m_scene.GetTriangles().size());
-		for (uint32_t i = 0; i < m_scene.GetTriangles().size(); ++i) {
+		references.reserve(m_scene.GetTrianglesPkd().size());
+		for (uint32_t i = 0; i < m_scene.GetTrianglesPkd().size(); ++i) {
 			uint32_t ref_idx = m_thread_reference_allocators[0].Alloc();
 			auto &ref = m_reference_pool[ref_idx];
 			ref.tri_idx = i;
-			ref.aabb = m_scene.GetTriangles()[i].GetAABB();
+			ref.aabb = m_scene.GetTrianglesPkd()[i].GetAABB();
 			references.push_back(ref_idx);
 		}
 	}
@@ -157,9 +159,22 @@ ParallelSBVHBuilder::split_reference(const ParallelSBVHBuilder::Reference &ref, 
 	left.aabb = right.aabb = AABB();
 	left.tri_idx = right.tri_idx = ref.tri_idx;
 
-	const Triangle &tri = m_scene.GetTriangles()[ref.tri_idx];
+	const TrianglePkd &tri = m_scene.GetTrianglesPkd()[ref.tri_idx];	
+
+	glm::vec3 positions[3], m_pxUnpacked, m_pppV;
+			
+	//m_tcP1len, m_tcP2len, m_pppl
+	m_pxUnpacked = decompress_unit_vec(tri.m_px) * tri.m_pxl;
+	 
+	//vec3 m_ppp = decompress_unit_vec(tri.m_ppp) * tri.m_pppl;
+	m_pppV = decompress_unit_vec(tri.m_ppp) * m_pxUnpacked[2];
+	
+	positions[0] = decompress_unit_vec(tri.m_p1v) * m_pppV[0];
+	positions[1] = decompress_unit_vec(tri.m_p2v) * m_pppV[1] + positions[0];
+	positions[2] = decompress_unit_vec(tri.m_p3v) * m_pppV[2] + positions[0];
+	
 	for (uint32_t i = 0; i < 3; ++i) {
-		const glm::vec3 &v0 = tri.positions[i], &v1 = tri.positions[(i + 1) % 3];
+		const glm::vec3 &v0 = positions[i], &v1 = positions[(i + 1) % 3];
 		float p0 = v0[(int)dim], p1 = v1[(int)dim];
 		if (p0 <= pos)
 			left.aabb.Expand(v0);

@@ -10,6 +10,8 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
+extern glm::vec3 decompress_unit_vec(glm::uint packed);
+
 struct AABB {
 	glm::vec3 min, max;
 
@@ -55,6 +57,23 @@ struct TrianglePkd {
 	uint32_t m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2, m_ppp, m_px;
 	float m_pxl;
 	uint32_t m_material_id;
+
+	inline AABB GetAABB() const {
+	glm::vec3 positions[3], m_pxUnpacked, m_pppV;
+			
+	//m_tcP1len, m_tcP2len, m_pppl
+	m_pxUnpacked = decompress_unit_vec(m_px) * m_pxl;
+	 
+	//vec3 m_ppp = decompress_unit_vec(tri.m_ppp) * tri.m_pppl;
+	m_pppV = decompress_unit_vec(m_ppp) * m_pxUnpacked[2];
+	
+	positions[0] = decompress_unit_vec(m_p1v) * m_pppV[0];
+	positions[1] = decompress_unit_vec(m_p2v) * m_pppV[1] + positions[0];
+	positions[2] = decompress_unit_vec(m_p3v) * m_pppV[2] + positions[0];
+	
+		return {glm::min(positions[0], glm::min(positions[1], positions[2])),
+		        glm::max(positions[0], glm::max(positions[1], positions[2]))};
+	}
 };
 
 #endif // PATHGL_BVH_SHAPE_HPP

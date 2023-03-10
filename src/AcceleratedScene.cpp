@@ -9,6 +9,8 @@
 #include <future>
 #include <thread>
 
+extern glm::vec3 decompress_unit_vec(glm::uint packed);
+
 std::shared_ptr<AcceleratedScene> AcceleratedScene::Create(const std::shared_ptr<myvk::Queue> &graphics_queue,
                                                            const std::shared_ptr<WideBVH> &widebvh) {
 	std::shared_ptr<AcceleratedScene> ret = std::make_shared<AcceleratedScene>();
@@ -23,9 +25,22 @@ std::shared_ptr<AcceleratedScene> AcceleratedScene::Create(const std::shared_ptr
 std::vector<glm::vec4> AcceleratedScene::generate_bvh_tri_matrices(const std::shared_ptr<WideBVH> &widebvh) {
 	std::vector<glm::vec4> matrices;
 	matrices.reserve(widebvh->GetTriIndices().size() * 3u);
+
+	glm::vec3 positions[3], m_pxUnpacked, m_pppV;
+	
 	for (uint32_t t : widebvh->GetTriIndices()) {
-		const Triangle &tri = widebvh->GetScenePtr()->GetTriangles()[t];
-		const glm::vec3 &v0 = tri.positions[0], &v1 = tri.positions[1], &v2 = tri.positions[2];
+		const TrianglePkd &tri = widebvh->GetScenePtr()->GetTrianglesPkd()[t];
+			
+	//m_tcP1len, m_tcP2len, m_pppl
+	m_pxUnpacked = decompress_unit_vec(tri.m_px) * tri.m_pxl;
+	 
+	//vec3 m_ppp = decompress_unit_vec(tri.m_ppp) * tri.m_pppl;
+	m_pppV = decompress_unit_vec(tri.m_ppp) * m_pxUnpacked[2];
+	
+	positions[0] = decompress_unit_vec(tri.m_p1v) * m_pppV[0];
+	positions[1] = decompress_unit_vec(tri.m_p2v) * m_pppV[1] + positions[0];
+	positions[2] = decompress_unit_vec(tri.m_p3v) * m_pppV[2] + positions[0];
+		const glm::vec3 &v0 = positions[0], &v1 = positions[1], &v2 = positions[2];
 		glm::vec4 c0{v0 - v2, 0.0f};
 		glm::vec4 c1{v1 - v2, 0.0f};
 		glm::vec4 c2{glm::cross(v0 - v2, v1 - v2), 0.0f};

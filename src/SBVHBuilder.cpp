@@ -8,6 +8,8 @@
 #define PARALLEL_SORTER pdqsort_branchless
 #include "ParallelSort.hpp"
 
+extern glm::vec3 decompress_unit_vec(glm::uint packed);
+
 template <uint32_t DIM>
 bool SBVHBuilder::reference_cmp(const SBVHBuilder::Reference &l, const SBVHBuilder::Reference &r) {
 	return l.m_aabb.GetDimCenter<DIM>() < r.m_aabb.GetDimCenter<DIM>();
@@ -83,9 +85,22 @@ void SBVHBuilder::split_reference(const SBVHBuilder::Reference &t_ref, uint32_t 
 	t_left->m_aabb = t_right->m_aabb = AABB();
 	t_left->m_tri_index = t_right->m_tri_index = t_ref.m_tri_index;
 
-	const Triangle &tri = m_scene.GetTriangles()[t_ref.m_tri_index];
+	const TrianglePkd &tri = m_scene.GetTrianglesPkd()[t_ref.m_tri_index];
+	
+	glm::vec3 positions[3], m_pxUnpacked, m_pppV;
+			
+	//m_tcP1len, m_tcP2len, m_pppl
+	m_pxUnpacked = decompress_unit_vec(tri.m_px) * tri.m_pxl;
+	 
+	//vec3 m_ppp = decompress_unit_vec(tri.m_ppp) * tri.m_pppl;
+	m_pppV = decompress_unit_vec(tri.m_ppp) * m_pxUnpacked[2];
+	
+	positions[0] = decompress_unit_vec(tri.m_p1v) * m_pppV[0];
+	positions[1] = decompress_unit_vec(tri.m_p2v) * m_pppV[1] + positions[0];
+	positions[2] = decompress_unit_vec(tri.m_p3v) * m_pppV[2] + positions[0];	
+
 	for (uint32_t i = 0; i < 3; ++i) {
-		const glm::vec3 &v0 = tri.positions[i], &v1 = tri.positions[(i + 1) % 3];
+		const glm::vec3 &v0 = positions[i], &v1 = positions[(i + 1) % 3];
 		float p0 = v0[(int)t_dim], p1 = v1[(int)t_dim];
 		if (p0 <= t_pos)
 			t_left->m_aabb.Expand(v0);
@@ -311,20 +326,20 @@ uint32_t SBVHBuilder::build_node(const NodeSpec &t_spec, uint32_t t_depth) {
 }
 
 void SBVHBuilder::Run() {
-	m_right_aabbs.reserve(m_scene.GetTriangles().size());
+	m_right_aabbs.reserve(m_scene.GetTrianglesPkd().size());
 
 	// init reference stack
-	m_refstack.reserve(m_scene.GetTriangles().size() * 2);
-	m_refstack.resize(m_scene.GetTriangles().size());
-	for (uint32_t i = 0; i < m_scene.GetTriangles().size(); ++i) {
+	m_refstack.reserve(m_scene.GetTrianglesPkd().size() * 2);
+	m_refstack.resize(m_scene.GetTrianglesPkd().size());
+	for (uint32_t i = 0; i < m_scene.GetTrianglesPkd().size(); ++i) {
 		m_refstack[i].m_tri_index = i;
-		m_refstack[i].m_aabb = m_scene.GetTriangles()[i].GetAABB();
+		m_refstack[i].m_aabb = m_scene.GetTrianglesPkd()[i].GetAABB();
 	}
 
-	m_bvh.m_nodes.reserve(m_scene.GetTriangles().size() * 2);
+	m_bvh.m_nodes.reserve(m_scene.GetTrianglesPkd().size() * 2);
 
 	auto start = std::chrono::steady_clock::now();
-	build_node({m_scene.GetAABB(), (uint32_t)m_scene.GetTriangles().size()}, 0);
+	build_node({m_scene.GetAABB(), (uint32_t)m_scene.GetTrianglesPkd().size()}, 0);
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 	spdlog::info("SBVH built with {} nodes in {} ms", m_bvh.m_nodes.size(), duration.count());

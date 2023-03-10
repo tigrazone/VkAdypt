@@ -21,7 +21,7 @@ private:
 public:
 	static std::shared_ptr<Scene> CreateFromFile(const char *filename);
 
-	const std::vector<Triangle> &GetTriangles() const { return m_triangles; }
+	// const std::vector<Triangle> &GetTriangles() const { return m_triangles; }
 	void clearTriangles() { 
 		m_triangles.clear(); 
 		m_triangles.shrink_to_fit();
