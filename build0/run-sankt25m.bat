@@ -1,0 +1,1 @@
+adypt -obj "C:\ccc\!\tinsel-master 10aug17 - 02\tinsel-master 10aug17 - 02\data\meshes\Sankt_Kilian_Sockel_jotero_com.obj"

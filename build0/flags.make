@@ -6,5 +6,5 @@ CXX_DEFINES = -DGLM_FORCE_SWIZZLE -DNOMINMAX -DSPDLOG_COMPILED_LIB -DVK_NO_PROTO
 
 CXX_INCLUDES = @CMakeFiles/Adypt.dir/includes_CXX.rsp
 
-CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17   -march=native -funroll-loops -mfpmath=sse -msse2 -msse3 -mssse3 -ffast-math -fpermissive  -Wno-format-y2k  -fno-strict-aliasing     -ffunction-sections   -flto 
+CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17   -march=native -funroll-loops -mfpmath=sse -msse2 -msse3 -mssse3 -ffast-math -fpermissive  -Wno-format-y2k  -fno-strict-aliasing     -ffunction-sections   -flto -fdata-sections
 

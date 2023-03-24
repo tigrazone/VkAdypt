@@ -20,6 +20,13 @@ std::shared_ptr<Scene> Scene::CreateFromFile(const char *filename) {
 
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
+	
+	tinyobj::material_t defaultMaterial;
+	defaultMaterial.diffuse[0] = 1.f;
+	defaultMaterial.diffuse[1] = 1.f;
+	defaultMaterial.diffuse[2] = 1.f;
+	
+	bool noMaterials;
 
 	std::string load_warnings, load_errors;
 	if (!tinyobj::LoadObj(&attrib, &shapes, &ret->m_materials, &load_warnings, &load_errors, filename,
@@ -28,9 +35,9 @@ std::shared_ptr<Scene> Scene::CreateFromFile(const char *filename) {
 		return nullptr;
 	}
 
-	if (ret->m_materials.empty()) {
-		spdlog::error("No material found");
-		return nullptr;
+	if (noMaterials = ret->m_materials.empty()) {
+		spdlog::warn("No material found. Use default");
+		ret->m_materials.push_back(defaultMaterial);
 	}
 	if (!load_errors.empty()) {
 		spdlog::error("{}", load_errors.c_str());
@@ -40,7 +47,7 @@ std::shared_ptr<Scene> Scene::CreateFromFile(const char *filename) {
 		spdlog::warn("{}", load_warnings.c_str());
 	}
 
-	ret->extract_shapes(attrib, shapes);
+	ret->extract_shapes(attrib, shapes, noMaterials);
 	ret->normalize();
 
 	spdlog::info("{} triangles loaded from {}", ret->m_triangles.size(), filename);
@@ -48,7 +55,7 @@ std::shared_ptr<Scene> Scene::CreateFromFile(const char *filename) {
 	return ret;
 }
 
-void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<tinyobj::shape_t> &shapes) {
+void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<tinyobj::shape_t> &shapes, const bool noMaterials) {
 	bool gen_normal_warn = false;
 	size_t i3;
 	glm::vec3 positions[3], normals[3], delta;
@@ -149,7 +156,7 @@ void Scene::extract_shapes(const tinyobj::attrib_t &attrib, const std::vector<ti
 					tri.positions[2] = positions[2];
 
 					//save packed triangle data
-					triPkd.m_material_id = shape.mesh.material_ids[face];
+					triPkd.m_material_id = noMaterials ? 0 : shape.mesh.material_ids[face];
 
 					//calculate compressed version of positions, texture coords, normals
 					len = glm::length(positions[0]);

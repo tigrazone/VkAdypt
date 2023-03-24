@@ -176,7 +176,6 @@ void BVHIntersection(in const vec4 origin_tmin, vec3 dir, inout uint o_hit_tri_i
 				uint swizzled_loz = (idir.z < 0) ? hiy_hiz.w : loz_hix.y;
 				uint swizzled_hiz = (idir.z < 0) ? loz_hix.y : hiy_hiz.w;
 
-
 				txmin = vec4(ivec4(swizzled_lox, swizzled_lox >> 8, swizzled_lox >> 16, swizzled_lox >> 24) & 0xffu) * adjusted_idir_x + vec4(adjusted_origin.x);
 				
 				tymin = vec4(ivec4(swizzled_loy, swizzled_loy >> 8, swizzled_loy >> 16, swizzled_loy >> 24) & 0xffu) * adjusted_idir_y + vec4(adjusted_origin.y);

@@ -1,0 +1,1 @@
+adypt -obj "C:\ccc\msys64\home\thr\_glslppm\03_march18_Gutenberg_4mln_tris\cornell_metal.obj"
