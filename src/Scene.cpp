@@ -22,9 +22,9 @@ std::shared_ptr<Scene> Scene::CreateFromFile(const char *filename) {
 	std::vector<tinyobj::shape_t> shapes;
 	
 	tinyobj::material_t defaultMaterial;
-	defaultMaterial.diffuse[0] = 1.f;
-	defaultMaterial.diffuse[1] = 1.f;
-	defaultMaterial.diffuse[2] = 1.f;
+	defaultMaterial.diffuse[0] = 0.5f;
+	defaultMaterial.diffuse[1] = 0.5f;
+	defaultMaterial.diffuse[2] = 0.5f;
 	
 	bool noMaterials;
 
