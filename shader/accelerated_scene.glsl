@@ -477,9 +477,9 @@ void TriangleFetchInfo(in const uint tri_idx,
 		                 vec2(m_tc2[1], m_tc2[2]) * (1.0 - tri_uv.x - tri_uv.y);
 		diffuse = texture(uTextures[mtl.m_dtex], texcoords).rgb;
 	} else
-		diffuse = vec3(mtl.m_diffuse[0], mtl.m_diffuse[1], mtl.m_diffuse[2]);
-	specular = vec3(mtl.m_sr, mtl.m_sg, mtl.m_sb);
-	emissive = vec3(mtl.m_er, mtl.m_eg, mtl.m_eb);
+		diffuse = mtl.m_diffuse;
+	specular = mtl.m_specular;
+	emissive = mtl.m_emission;
 }
 
 vec3 TriangleFetchDiffuse(in const uint tri_idx, in const vec2 tri_uv) {
@@ -495,7 +495,7 @@ vec3 TriangleFetchDiffuse(in const uint tri_idx, in const vec2 tri_uv) {
 		                 vec2(m_tc2[1], m_tc2[2]) * (1.0 - tri_uv.x - tri_uv.y);
 		return texture(uTextures[mtl.m_dtex], texcoords).rgb;
 	} else
-		return vec3(mtl.m_diffuse[0], mtl.m_diffuse[1], mtl.m_diffuse[2]);
+		return mtl.m_diffuse;
 }
 
 vec3 TriangleFetchNormal(in const uint tri_idx, in const vec2 tri_uv) {

@@ -13,12 +13,15 @@ struct TrianglePkd {
 };	
 	
 struct Material {
+	vec3 m_diffuse;
 	uint m_dtex;
-	float m_diffuse[3];
+		
+	vec3 m_emission;
 	uint m_etex;
-	float m_er, m_eg, m_eb;
+	
+	vec3 m_specular;
 	uint m_stex;
-	float m_sr, m_sg, m_sb;
+	
 	uint m_illum;
 	float m_shininess;
 	float m_dissolve;

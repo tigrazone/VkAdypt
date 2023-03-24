@@ -64,19 +64,13 @@ AcceleratedScene::generate_tri_materials(const std::shared_ptr<Scene> &scene,
 		auto &mat = materials.back();
 
 		alloc_texture_id(t.diffuse_texname);
-		mat.m_diffuse[0] = t.diffuse[0];
-		mat.m_diffuse[1] = t.diffuse[1];
-		mat.m_diffuse[2] = t.diffuse[2];
+		mat.m_diffuse = glm::vec3(t.diffuse[0], t.diffuse[1], t.diffuse[2]);
 
 		mat.m_etex = UINT32_MAX;
-		mat.m_er = t.emission[0];
-		mat.m_eg = t.emission[1];
-		mat.m_eb = t.emission[2];
+		mat.m_emission = glm::vec3(t.emission[0], t.emission[1], t.emission[2]);
 
 		mat.m_stex = UINT32_MAX;
-		mat.m_sr = t.specular[0];
-		mat.m_sg = t.specular[1];
-		mat.m_sb = t.specular[2];
+		mat.m_specular = glm::vec3(t.specular[0], t.specular[1], t.specular[2]);
 
 		mat.m_illum = t.illum;
 		mat.m_shininess = t.shininess;
