@@ -11,18 +11,10 @@
 #include <myvk/ImageView.hpp>
 #include <myvk/Sampler.hpp>
 
+#include "../shader/common.h"
+
 class AcceleratedScene {
 private:
-	struct Material {
-		uint32_t m_dtex;
-		float m_dr, m_dg, m_db;
-		uint32_t m_etex;
-		float m_er, m_eg, m_eb;
-		uint32_t m_stex;
-		float m_sr, m_sg, m_sb;
-		uint32_t m_illum;
-		float m_shininess, m_dissolve, m_ior;
-	};
 	struct Texture {
 		std::shared_ptr<myvk::Image> m_image;
 		std::shared_ptr<myvk::ImageView> m_image_view;

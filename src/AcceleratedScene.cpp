@@ -39,7 +39,7 @@ std::vector<glm::vec4> AcceleratedScene::generate_bvh_tri_matrices(const std::sh
 	return matrices;
 }
 
-std::vector<AcceleratedScene::Material>
+std::vector<Material>
 AcceleratedScene::generate_tri_materials(const std::shared_ptr<Scene> &scene,
                                          std::unordered_map<std::string, uint32_t> *texture_name_map) {
 	texture_name_map->clear();
@@ -64,9 +64,9 @@ AcceleratedScene::generate_tri_materials(const std::shared_ptr<Scene> &scene,
 		auto &mat = materials.back();
 
 		alloc_texture_id(t.diffuse_texname);
-		mat.m_dr = t.diffuse[0];
-		mat.m_dg = t.diffuse[1];
-		mat.m_db = t.diffuse[2];
+		mat.m_diffuse[0] = t.diffuse[0];
+		mat.m_diffuse[1] = t.diffuse[1];
+		mat.m_diffuse[2] = t.diffuse[2];
 
 		mat.m_etex = UINT32_MAX;
 		mat.m_er = t.emission[0];
@@ -185,7 +185,7 @@ void AcceleratedScene::load_textures(const std::shared_ptr<myvk::Queue> &graphic
 	}
 }
 
-void AcceleratedScene::process_texture_errors(std::vector<AcceleratedScene::Material> *tri_materials) {
+void AcceleratedScene::process_texture_errors(std::vector<Material> *tri_materials) {
 	if (m_textures.empty())
 		return;
 	std::vector<uint32_t> new_index_mapper(m_textures.size()), prefix(m_textures.size());

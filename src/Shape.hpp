@@ -10,6 +10,8 @@
 #include <cmath>
 #include <glm/glm.hpp>
 
+#include "../shader/common.h"
+
 struct AABB {
 	glm::vec3 min, max;
 
@@ -48,13 +50,6 @@ struct Triangle {
 		return {glm::min(positions[0], glm::min(positions[1], positions[2])),
 		        glm::max(positions[0], glm::max(positions[1], positions[2]))};
 	}
-};
-
-// can be directly put into gpu
-struct TrianglePkd {
-	uint32_t m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2, m_ppp, m_px;
-	float m_pxl;
-	uint32_t m_material_id;
 };
 
 #endif // PATHGL_BVH_SHAPE_HPP

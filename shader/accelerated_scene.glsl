@@ -5,24 +5,8 @@
 layout(constant_id = 0) const uint kTextureNum = 1024;
 layout(constant_id = 1) const uint kTraversalStackSize = 23;
 
-struct TrianglePkd {
-	uint m_p1v, m_p2v, m_p3v, m_n1, m_n2, m_n3, m_tcP1, m_tcP2, m_ppp, m_px;	// 10
-	float m_pxl;																// 1
-	uint m_material_id;															// 1 -> 12
-};
+#include "common.h"
 
-struct Material {
-	uint m_dtex;
-	float m_dr, m_dg, m_db;
-	uint m_etex;
-	float m_er, m_eg, m_eb;
-	uint m_stex;
-	float m_sr, m_sg, m_sb;
-	uint m_illum;
-	float m_shininess;
-	float m_dissolve;
-	float m_ior;
-};
 struct Node {
 	vec4 m_head;
 	uvec4 m_base_meta, m_lox_loy, m_loz_hix, m_hiy_hiz;
@@ -493,7 +477,7 @@ void TriangleFetchInfo(in const uint tri_idx,
 		                 vec2(m_tc2[1], m_tc2[2]) * (1.0 - tri_uv.x - tri_uv.y);
 		diffuse = texture(uTextures[mtl.m_dtex], texcoords).rgb;
 	} else
-		diffuse = vec3(mtl.m_dr, mtl.m_dg, mtl.m_db);
+		diffuse = vec3(mtl.m_diffuse[0], mtl.m_diffuse[1], mtl.m_diffuse[2]);
 	specular = vec3(mtl.m_sr, mtl.m_sg, mtl.m_sb);
 	emissive = vec3(mtl.m_er, mtl.m_eg, mtl.m_eb);
 }
@@ -511,7 +495,7 @@ vec3 TriangleFetchDiffuse(in const uint tri_idx, in const vec2 tri_uv) {
 		                 vec2(m_tc2[1], m_tc2[2]) * (1.0 - tri_uv.x - tri_uv.y);
 		return texture(uTextures[mtl.m_dtex], texcoords).rgb;
 	} else
-		return vec3(mtl.m_dr, mtl.m_dg, mtl.m_db);
+		return vec3(mtl.m_diffuse[0], mtl.m_diffuse[1], mtl.m_diffuse[2]);
 }
 
 vec3 TriangleFetchNormal(in const uint tri_idx, in const vec2 tri_uv) {
