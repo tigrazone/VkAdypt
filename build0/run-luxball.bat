@@ -1,0 +1,1 @@
+adypt -obj "c:\msys64\home\user\fluctus\git\my\fluctus\assets\luxball\luxball.obj"

@@ -1,0 +1,1 @@
+adypt -obj "c:\msys64\home\user\from-git\RVPT\assets\models\tridel-interior-test.obj"

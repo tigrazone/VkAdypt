@@ -2,27 +2,28 @@
 #define ACCELERATED_SCENE_SET 0
 #endif
 
-layout(constant_id = 0) const uint kTextureNum = 1024;
-layout(constant_id = 1) const uint kTraversalStackSize = 23;
+#extension GL_EXT_nonuniform_qualifier : enable
+
+#define kTraversalStackSize 23*10
 
 #include "common.h"
+#include "compress.glsl"
 
 struct Node {
 	vec4 m_head;
 	uvec4 m_base_meta, m_lox_loy, m_loz_hix, m_hiy_hiz;
 };
+
 struct Woop {
 	vec4 m0, m1, m2;
 };
-layout(set = ACCELERATED_SCENE_SET, binding = 0) uniform sampler2D uTextures[kTextureNum];
+
+layout(set = ACCELERATED_SCENE_SET, binding = 0) uniform sampler2D uTextures[];
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 1) readonly buffer uuTriangles { TrianglePkd uTriangles[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 2) readonly buffer uuTriMaterials { Material uTriMaterials[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 3) readonly buffer uuBVHNodes { Node uBVHNodes[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 4) readonly buffer uuBVHTriIndices { uint uBVHTriIndices[]; };
 layout(std430, set = ACCELERATED_SCENE_SET, binding = 5) readonly buffer uuBVHTriMatrices { Woop uBVHTriMatrices[]; };
-
-
-#include "compress.glsl"
 
 uvec2 stack[kTraversalStackSize];
 const float ooeps = exp2(-64.0f);
