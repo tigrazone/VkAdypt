@@ -2,7 +2,7 @@
 #include <spdlog/spdlog.h>
 
 constexpr const char *kHelpStr = "AdamYuan's Path Tracer (Driven by Vulkan)\n"
-                                 "\t-obj [WAVEFRONT OBJ FILENAME]\n";
+                                 "\t-obj [WAVEFRONT OBJ FILENAME]";
 
 int main(int argc, char **argv) {
 	spdlog::set_pattern("[%H:%M:%S.%e] [%^%l%$] [thread %t] %v");
@@ -14,13 +14,13 @@ int main(int argc, char **argv) {
 		if (i + 1 < argc && strcmp(argv[i], "-obj") == 0)
 			filename = argv + i + 1, ++i;
 		else {
-			printf(kHelpStr);
+			puts(kHelpStr);
 			return EXIT_FAILURE;
 		}
 	}
 
 	if (filename == nullptr) {
-		printf(kHelpStr);
+		puts(kHelpStr);
 		return EXIT_FAILURE;
 	}
 
