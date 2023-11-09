@@ -13,7 +13,7 @@ layout(push_constant) uniform uuPushConstant { float uWidth1, uHeight1; };
 void main() {
 	uint tri_idx;
 	vec2 tri_uv;
-	vec3 camDir = CameraGenRay(gl_FragCoord.xy * vec2(uWidth1, uHeight1));
+	vec3 camDir = CameraGenRay(fma(gl_FragCoord.xy, vec2(uWidth1, uHeight1), vec2(-1.0f)));
 	BVHIntersection(vec4(uPosition.xyz, 1e-6), camDir, tri_idx, tri_uv);
 
 	if (tri_idx != 0xffffffffu) {
