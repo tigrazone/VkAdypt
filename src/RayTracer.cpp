@@ -3,17 +3,79 @@
 #include "QuadSpirv.hpp"
 #include <myvk/ShaderModule.hpp>
 
+#include "Noise.inl"
+
 std::shared_ptr<RayTracer> RayTracer::Create(const std::shared_ptr<AcceleratedScene> &accelerated_scene,
                                              const std::shared_ptr<Camera> &camera,
                                              const std::shared_ptr<myvk::RenderPass> &render_pass, uint32_t subpass) {
 	std::shared_ptr<RayTracer> ret = std::make_shared<RayTracer>();
 	ret->m_accelerated_scene_ptr = accelerated_scene;
 	ret->m_camera_ptr = camera;
+	
+	auto devicePtr = render_pass->GetDevicePtr();
 
-	ret->create_pipeline_layout(render_pass->GetDevicePtr());
+	ret->m_sobol.Initialize(devicePtr);
+	ret->create_noise_images(devicePtr);
+	/*
+	ret->set_noise_image(render_pass);
+	ret->create_descriptor(devicePtr);
+	ret->create_pipeline(devicePtr);
+	*/
+
+	ret->create_pipeline_layout(devicePtr);
 	ret->create_graphics_pipeline(render_pass, subpass);
 
 	return ret;
+}
+
+
+void RayTracer::create_noise_images(const std::shared_ptr<myvk::Device> &device) {
+	m_noise_image = myvk::Image::CreateTexture2D(device, {kNoiseSize, kNoiseSize}, 1, VK_FORMAT_R8G8_UNORM,
+	                                             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+	m_noise_image_view = myvk::ImageView::Create(m_noise_image, VK_IMAGE_VIEW_TYPE_2D);
+	m_noise_sampler = myvk::Sampler::Create(device, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+}
+
+void RayTracer::set_noise_image(const std::shared_ptr<myvk::RenderPass> &command_pool) {
+	// create a staging buffer with maximum possible size
+	std::shared_ptr<myvk::Buffer> staging_buffer =
+	    myvk::Buffer::CreateStaging(command_pool->GetDevicePtr(), sizeof(kNoise));
+	{
+		uint8_t *data = (uint8_t *)staging_buffer->Map();
+		std::copy(std::begin(kNoise), std::end(kNoise), data);
+		staging_buffer->Unmap();
+	}
+
+	VkBufferImageCopy region = {};
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.layerCount = 1;
+	region.imageOffset = {0, 0, 0};
+	region.imageExtent = {kNoiseSize, kNoiseSize, 1};
+
+/*
+	std::shared_ptr<myvk::CommandBuffer> command_buffer = myvk::CommandBuffer::Create(command_pool);
+	
+	std::shared_ptr<myvk::Fence> fence = myvk::Fence::Create(command_pool->GetDevicePtr());
+	command_buffer->Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	command_buffer->CmdPipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, {}, {},
+	                                   m_noise_image->GetDstMemoryBarriers({region}, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+	                                                                       VK_IMAGE_LAYOUT_UNDEFINED,
+	                                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+	command_buffer->CmdCopy(staging_buffer, m_noise_image, {region});
+	command_buffer->CmdPipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, {}, {},
+	                                   m_noise_image->GetDstMemoryBarriers({region}, VK_ACCESS_TRANSFER_WRITE_BIT, 0,
+	                                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+	                                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+	command_buffer->End();
+
+	command_buffer->Submit(fence);
+	fence->Wait();
+	*/
 }
 
 void RayTracer::create_pipeline_layout(const std::shared_ptr<myvk::Device> &device) {

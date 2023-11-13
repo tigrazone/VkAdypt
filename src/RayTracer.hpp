@@ -9,10 +9,18 @@
 #include "AcceleratedScene.hpp"
 #include "Camera.hpp"
 
+#include "Sobol.hpp"
+#include "myvk/Image.hpp"
+
 class RayTracer {
 private:
 	std::shared_ptr<Camera> m_camera_ptr;
 	std::shared_ptr<AcceleratedScene> m_accelerated_scene_ptr;
+
+	Sobol m_sobol;
+	std::shared_ptr<myvk::Image> m_color_image, m_noise_image;
+	std::shared_ptr<myvk::ImageView> m_color_image_view, m_noise_image_view;
+	std::shared_ptr<myvk::Sampler> m_noise_sampler;
 
 	uint32_t m_width{kDefaultWidth}, m_height{kDefaultHeight};
 
@@ -21,6 +29,9 @@ private:
 
 	void create_pipeline_layout(const std::shared_ptr<myvk::Device> &device);
 	void create_graphics_pipeline(const std::shared_ptr<myvk::RenderPass> &render_pass, uint32_t subpass);
+	
+	void create_noise_images(const std::shared_ptr<myvk::Device> &device);	
+	void set_noise_image(const std::shared_ptr<myvk::RenderPass> &command_pool);
 
 public:
 	static std::shared_ptr<RayTracer> Create(const std::shared_ptr<AcceleratedScene> &accelerated_scene,

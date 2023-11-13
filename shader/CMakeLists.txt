@@ -7,6 +7,7 @@ set(SHADER_SRC
         )
 
 set(SHADER_HEADER
+		sobol.comp
         accelerated_scene.glsl
         camera.glsl
         )

@@ -4,6 +4,8 @@
 #include "accelerated_scene.glsl"
 #define CAMERA_SET 1
 #include "camera.glsl"
+#define SOBOL_SET 3
+#include "sobol.glsl"
 
 layout(location = 0) out vec4 oColor;
 layout(push_constant) uniform uuPushConstant { float uWidth1, uHeight1; };

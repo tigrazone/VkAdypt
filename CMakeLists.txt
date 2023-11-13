@@ -47,7 +47,12 @@ add_executable(Adypt
 
         # UI
         src/UIHelper.hpp
-        src/UIHelper.cpp
+        src/UIHelper.cpp		
+		
+		src/EnvironmentMap.cpp
+		src/EnvironmentMap.hpp
+		src/Sobol.cpp
+		src/Sobol.hpp
 
         # BVH
         src/BinaryBVHBase.hpp
